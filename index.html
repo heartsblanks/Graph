@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask App</title>
+    <title>Select a Value</title>
 </head>
 <body>
-    <h1>Welcome to the Flask App</h1>
-    <form action="/get_data" method="post">
-        <label for="column_value">Select Value:</label>
-        <input type="text" id="column_value" name="column_value">
-        <button type="submit">Submit</button>
-    </form>
+    <h1>Select a Value from Column A</h1>
+    <ul>
+        {% for value in unique_values %}
+            <li><a href="{{ url_for('graph', value=value) }}">{{ value }}</a></li>
+        {% endfor %}
+    </ul>
 </body>
 </html>
