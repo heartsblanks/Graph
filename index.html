@@ -50,14 +50,17 @@
                     .attr("width", width)
                     .attr("height", height);
 
+                // Create hexbin function
                 const hexbin = d3.hexbin()
                     .radius(hexRadius)
                     .x(d => d.x)
                     .y(d => d.y);
 
+                // Create color scale
                 const color = d3.scaleSequential(d3.interpolateBlues)
                     .domain([0, d3.max(data, d => d.count)]);
 
+                // Create hexbin paths
                 svg.selectAll("path")
                     .data(hexbin(data))
                     .enter().append("path")
