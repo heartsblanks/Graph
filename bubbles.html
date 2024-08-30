@@ -73,13 +73,10 @@
                     .domain([1, d3.max(data, d => d.count)])
                     .range([20, 60]);
 
-                const simulation = d3.forceSimulation(data)
+                let simulation = d3.forceSimulation(data)
                     .force("charge", d3.forceManyBody().strength(-15))
                     .force("center", d3.forceCenter(width / 2, height / 2))
                     .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
-                    .force("x", d3.forceX().x(d => Math.random() * width).strength(0.01))
-                    .force("y", d3.forceY().y(d => Math.random() * height).strength(0.01))
-                    .velocityDecay(0.2)  // Slow down the simulation
                     .on("tick", ticked);
 
                 const bubbles = svg.selectAll(".bubble")
@@ -98,27 +95,57 @@
 
                 function ticked() {
                     bubbles
-                        .attr("transform", d => `translate(${d.x},${d.y})`)
-                        .each(function(d) {
-                            d.x = Math.max(radiusScale(d.count), Math.min(width - radiusScale(d.count), d.x));
-                            d.y = Math.max(radiusScale(d.count), Math.min(height - radiusScale(d.count), d.y));
-                        });
+                        .attr("transform", d => `translate(${d.x},${d.y})`);
                 }
-
-                // Update the simulation forces for dynamic random movement
-                simulation.force("x", d3.forceX().x(() => Math.random() * width).strength(0.002));
-                simulation.force("y", d3.forceY().y(() => Math.random() * height).strength(0.002));
-                simulation.alpha(0.1).restart();  // Start the simulation with very low alpha
 
                 d3.select("#search-box").on("input", function () {
                     const searchTerm = this.value.toLowerCase();
 
-                    bubbles
-                        .style("opacity", d => d.A.toLowerCase().includes(searchTerm) ? 1 : 0.1)
-                        .attr("pointer-events", d => d.A.toLowerCase().includes(searchTerm) ? "all" : "none");
+                    // Filter data based on search term
+                    const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
+
+                    // Update simulation with filtered data
+                    simulation.nodes(filteredData);
+
+                    const bubbleUpdate = bubbles.data(filteredData, d => d.A);
+
+                    // Remove non-matching bubbles
+                    bubbleUpdate.exit().remove();
+
+                    // Add new bubbles if needed
+                    const bubbleEnter = bubbleUpdate.enter().append("g")
+                        .attr("class", "bubble");
+
+                    bubbleEnter.append("circle")
+                        .attr("r", d => radiusScale(d.count))
+                        .attr("fill", "#1f77b4");
+
+                    bubbleEnter.append("text")
+                        .attr("class", "bubble-text")
+                        .attr("dy", ".3em")
+                        .text(d => d.A);
+
+                    // Merge the existing bubbles with the new ones and update the position
+                    const bubbleMerge = bubbleEnter.merge(bubbleUpdate);
+
+                    bubbleMerge.select("circle")
+                        .transition()
+                        .duration(750)
+                        .attr("r", d => radiusScale(d.count));
+
+                    bubbleMerge.select(".bubble-text")
+                        .text(d => d.A);
+
+                    // Re-center and spread the bubbles
+                    simulation
+                        .force("center", d3.forceCenter(width / 2, height / 2))
+                        .force("x", d3.forceX().strength(0.05))
+                        .force("y", d3.forceY().strength(0.05))
+                        .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
+                        .alpha(1)
+                        .restart();
                 });
 
-                // Resize the SVG and restart the simulation on window resize
                 window.addEventListener('resize', function() {
                     const newWidth = window.innerWidth;
                     const newHeight = window.innerHeight;
