@@ -37,6 +37,17 @@
             left: 0;
         }
 
+        #graph-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            z-index: 1000;
+            display: none;
+        }
+
         .bubble {
             cursor: pointer;
             transition: opacity 0.3s;
@@ -48,11 +59,20 @@
             fill: #fff;
             pointer-events: none;
         }
+
+        .graph-content {
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body>
     <input type="text" id="search-box" placeholder="Start typing to filter bubbles...">
     <div id="bubble-chart"></div>
+    <div id="graph-container">
+        <div id="graph-content" class="graph-content"></div>
+        <button id="close-graph" style="position: absolute; top: 20px; right: 20px;">Close</button>
+    </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -97,6 +117,18 @@
                     .attr("dy", ".3em")
                     .text(d => d.A);
 
+                // Add click event listener
+                bubbles.on("click", function (event, d) {
+                    fetch(`/graph/${d.A}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            // Display the graph container and insert graph HTML
+                            document.getElementById('graph-content').innerHTML = data.graph_html;
+                            document.getElementById('graph-container').style.display = 'block';
+                        })
+                        .catch(error => console.error('Error fetching graph data:', error));
+                });
+
                 d3.select("#search-box").on("input", function () {
                     const searchTerm = this.value.toLowerCase();
 
@@ -135,6 +167,10 @@
                     svg.attr("width", newWidth).attr("height", newHeight);
                     simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2));
                     simulation.alpha(0.5).restart();
+                });
+
+                document.getElementById('close-graph').addEventListener('click', function () {
+                    document.getElementById('graph-container').style.display = 'none';
                 });
             }).catch(function (error) {
                 console.error('Error fetching data:', error);
