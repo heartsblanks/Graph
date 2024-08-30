@@ -1,21 +1,63 @@
 from flask import Flask, render_template, jsonify
-from database_manager import DatabaseManager
+import sqlite3
 
-class FlaskApp:
-    def __init__(self, db_manager):
-        self.app = Flask(__name__)
-        self.db_manager = db_manager
+app = Flask(__name__)
 
-        @self.app.route('/')
-        def index():
-            # Query unique values from column A
-            query = 'SELECT DISTINCT A FROM table1 UNION SELECT DISTINCT A FROM table2'
-            unique_values = self.db_manager.query_database(query)
-            unique_values = [item[0] for item in unique_values]
-            return render_template('index.html', unique_values=unique_values)
+class DatabaseManager:
+    def __init__(self, db_name='example.db'):
+        self.db_name = db_name
 
-        @self.app.route('/data')
-        def data():
-            # Return data for hexbin map
-            coordinates = self.db_manager.get_coordinates()
-            return jsonify(coordinates)
+    def query_database(self, query, params=()):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+class GraphVisualizer:
+    def create_graph(self, parent, children):
+        # Implement this function to generate the Plotly graph object
+        # Example placeholder
+        return {
+            'data': [
+                # Add your Plotly data structure here
+            ],
+            'layout': {
+                'title': parent
+                # Add other layout options here
+            }
+        }
+
+    def generate_plotly_graph(self, graph):
+        # Convert Plotly graph to HTML
+        import plotly.io as pio
+        return pio.to_html(graph, full_html=False)
+
+@app.route('/graph/<value>', methods=['GET'])
+def graph(value):
+    db_manager = DatabaseManager()
+    graph_visualizer = GraphVisualizer()
+    
+    query1 = 'SELECT D FROM table1 WHERE A = ?'
+    query2 = 'SELECT D FROM table2 WHERE A = ?'
+    
+    data1 = db_manager.query_database(query1, (value,))
+    data2 = db_manager.query_database(query2, (value,))
+    
+    combined_data = {
+        'parent': value,
+        'children': {
+            'table1': [d[0] for d in data1],
+            'table2': [d[0] for d in data2]
+        }
+    }
+    
+    # Create and generate Plotly graph
+    G = graph_visualizer.create_graph(value, combined_data['children'])
+    graph_html = graph_visualizer.generate_plotly_graph(G)
+    
+    return jsonify({'graph_html': graph_html, 'data': combined_data})
+
+if __name__ == '__main__':
+    app.run(debug=True)
