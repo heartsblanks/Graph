@@ -43,19 +43,6 @@
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    const data = [
-        { A: "Alpha", count: 10 },
-        { A: "Beta", count: 15 },
-        { A: "Gamma", count: 8 },
-        { A: "Delta", count: 12 },
-        { A: "Epsilon", count: 5 },
-        { A: "Zeta", count: 14 },
-        { A: "Eta", count: 7 },
-        { A: "Theta", count: 10 },
-        { A: "Iota", count: 11 },
-        { A: "Kappa", count: 9 }
-    ];
-
     const svg = d3.select("body").append("svg")
         .attr("width", width)
         .attr("height", height);
@@ -107,73 +94,76 @@
         .enter().append("feMergeNode")
         .attr("in", d => d);
 
-    const simulation = d3.forceSimulation(data)
-        .force("x", d3.forceX(width / 2).strength(0.05))
-        .force("y", d3.forceY(height / 2).strength(0.05))
-        .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 5))
-        .force("charge", d3.forceManyBody().strength(-20))
-        .on("tick", ticked);
-
-    function ticked() {
-        bubbles.attr("transform", d => `translate(${d.x},${d.y})`);
-    }
-
-    let bubbles = svg.selectAll(".bubble")
-        .data(data, d => d.A)
-        .enter().append("g")
-        .attr("class", "bubble");
-
-    bubbles.append("circle")
-        .attr("r", d => radiusScale(d.count))
-        .attr("fill", "url(#bubbleGradient)")
-        .attr("stroke", "#1f77b4")
-        .attr("stroke-width", 1)
-        .style("filter", "url(#drop-shadow)");
-
-    bubbles.append("text")
-        .attr("class", "bubble-text")
-        .attr("dy", ".3em")
-        .text(d => d.A);
-
-    d3.select("#search-box").on("input", function () {
-        const searchTerm = this.value.toLowerCase();
-
-        const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
-
-        simulation.nodes(filteredData)
+    // Fetch data from Flask endpoint
+    d3.json("/data").then(data => {
+        const simulation = d3.forceSimulation(data)
             .force("x", d3.forceX(width / 2).strength(0.05))
             .force("y", d3.forceY(height / 2).strength(0.05))
             .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 5))
-            .alpha(1)
-            .restart();
+            .force("charge", d3.forceManyBody().strength(-20))
+            .on("tick", ticked);
 
-        bubbles = bubbles.data(filteredData, d => d.A);
+        function ticked() {
+            bubbles.attr("transform", d => `translate(${d.x},${d.y})`);
+        }
 
-        bubbles.exit().remove();
-
-        const newBubbles = bubbles.enter().append("g")
+        let bubbles = svg.selectAll(".bubble")
+            .data(data, d => d.A)
+            .enter().append("g")
             .attr("class", "bubble");
 
-        newBubbles.append("circle")
+        bubbles.append("circle")
             .attr("r", d => radiusScale(d.count))
             .attr("fill", "url(#bubbleGradient)")
             .attr("stroke", "#1f77b4")
             .attr("stroke-width", 1)
             .style("filter", "url(#drop-shadow)");
 
-        newBubbles.append("text")
+        bubbles.append("text")
             .attr("class", "bubble-text")
             .attr("dy", ".3em")
             .text(d => d.A);
 
-        bubbles = newBubbles.merge(bubbles);
-    });
+        d3.select("#search-box").on("input", function () {
+            const searchTerm = this.value.toLowerCase();
 
-    // Continuous movement of bubbles
-    simulation
-        .force("x", d3.forceX().x(d => d.x))
-        .force("y", d3.forceY().y(d => d.y))
-        .velocityDecay(0.15); // Slower movement
+            const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
+
+            simulation.nodes(filteredData)
+                .force("x", d3.forceX(width / 2).strength(0.05))
+                .force("y", d3.forceY(height / 2).strength(0.05))
+                .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 5))
+                .alpha(1)
+                .restart();
+
+            bubbles = bubbles.data(filteredData, d => d.A);
+
+            bubbles.exit().remove();
+
+            const newBubbles = bubbles.enter().append("g")
+                .attr("class", "bubble");
+
+            newBubbles.append("circle")
+                .attr("r", d => radiusScale(d.count))
+                .attr("fill", "url(#bubbleGradient)")
+                .attr("stroke", "#1f77b4")
+                .attr("stroke-width", 1)
+                .style("filter", "url(#drop-shadow)");
+
+            newBubbles.append("text")
+                .attr("class", "bubble-text")
+                .attr("dy", ".3em")
+                .text(d => d.A);
+
+            bubbles = newBubbles.merge(bubbles);
+        });
+
+        // Continuous movement of bubbles
+        simulation
+            .velocityDecay(0.15); // Slower movement
+    }).catch(error => {
+        console.error("Error fetching data:", error);
+    });
 </script>
 
 </body>
