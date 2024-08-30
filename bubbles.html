@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Bubble Chart</title>
-    <!-- Include local D3.js Library -->
+    <title>Animated Bubble Chart</title>
     <script src="{{ url_for('static', filename='js/d3.min.js') }}"></script>
     <style>
         body {
@@ -50,7 +49,7 @@
     </style>
 </head>
 <body>
-    <h1>Interactive Bubble Chart</h1>
+    <h1>Animated Bubble Chart</h1>
     <input type="text" id="search-box" placeholder="Start typing to filter bubbles...">
     <div id="bubble-chart"></div>
 
@@ -73,12 +72,14 @@
 
                 const radiusScale = d3.scaleSqrt()
                     .domain([1, d3.max(data, d => d.count)])
-                    .range([10, 50]);
+                    .range([20, 50]);
 
                 const simulation = d3.forceSimulation(data)
-                    .force("charge", d3.forceManyBody().strength(5))
+                    .force("charge", d3.forceManyBody().strength(10))
                     .force("center", d3.forceCenter(width / 2, height / 2))
-                    .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2))
+                    .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 5))
+                    .force("x", d3.forceX(width / 2).strength(0.02))
+                    .force("y", d3.forceY(height / 2).strength(0.02))
                     .on("tick", ticked);
 
                 const bubbles = svg.selectAll(".bubble")
@@ -96,16 +97,22 @@
                     .text(d => d.A);
 
                 function ticked() {
-                    bubbles.attr("transform", d => `translate(${d.x},${d.y})`);
+                    bubbles
+                        .attr("transform", d => `translate(${d.x},${d.y})`);
                 }
 
                 d3.select("#search-box").on("input", function () {
                     const searchTerm = this.value.toLowerCase();
 
                     bubbles
-                        .style("opacity", d => d.A.toLowerCase().includes(searchTerm) ? 1 : 0)
+                        .style("opacity", d => d.A.toLowerCase().includes(searchTerm) ? 1 : 0.1)
                         .attr("pointer-events", d => d.A.toLowerCase().includes(searchTerm) ? "all" : "none");
                 });
+
+                // Update the simulation forces so the bubbles keep moving around
+                simulation.force("charge", d3.forceManyBody().strength(-15));
+                simulation.force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 1).strength(0.9));
+                simulation.alpha(0.5).restart(); // Start the animation with some initial movement
             }).catch(function (error) {
                 console.error('Error fetching data:', error);
             });
