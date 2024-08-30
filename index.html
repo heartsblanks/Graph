@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Select a Value</title>
+</head>
+<body>
+    <h1>Select a Value from Column A</h1>
+    <form method="POST" action="/get_data">
+        <label for="values">Select a value:</label>
+        <select name="selected_value" id="values">
+            {% for value in unique_values %}
+                <option value="{{ value }}">{{ value }}</option>
+            {% endfor %}
+        </select>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
