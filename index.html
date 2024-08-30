@@ -3,14 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select a Value</title>
+    <title>Hexbin Map</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #hexbin {
+            width: 100%;
+            height: 600px; /* Adjust as needed */
+        }
+    </style>
 </head>
 <body>
-    <h1>Select a Value from Column A</h1>
-    <ul>
-        {% for value in unique_values %}
-            <li><a href="{{ url_for('graph', value=value) }}">{{ value }}</a></li>
-        {% endfor %}
-    </ul>
+    <h1>Hexbin Map of Column A</h1>
+    <div id="hexbin"></div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Load data from the Flask server
+            d3.json('/data').then(function(data) {
+                const width = 960;
+                const height = 600;
+                const hexRadius = 20;
+                
+                const svg = d3.select("#hexbin").append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+
+                const hexbin = d3.hexbin()
+                    .radius(hexRadius)
+                    .x(d => d[0])
+                    .y(d => d[1]);
+
+                const color = d3.scaleSequential(d3.interpolateBlues)
+                    .domain([0, d3.max(data, d => d.length)]);
+
+                svg.selectAll("path")
+                    .data(hexbin(data))
+                    .enter().append("path")
+                    .attr("d", d => `M${d.x},${d.y}${hexbin.hexagon()}`)
+                    .style("fill", d => color(d.length))
+                    .style("stroke", "#fff")
+                    .style("stroke-width", "1px");
+
+                // Add labels or other elements as needed
+            });
+        });
+    </script>
 </body>
 </html>
