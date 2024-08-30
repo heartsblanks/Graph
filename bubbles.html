@@ -22,12 +22,15 @@
         }
         svg {
             display: block;
+            width: 100vw;
+            height: 100vh;
         }
         .bubble-text {
             fill: white;
             font-weight: bold;
             text-anchor: middle;
             pointer-events: none;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -59,7 +62,7 @@
 
     const radiusScale = d3.scaleSqrt()
         .domain([5, 15])
-        .range([20, 60]);
+        .range([30, 70]);
 
     // Define a radial gradient for 3D effect
     svg.append("defs")
@@ -108,7 +111,7 @@
         .force("x", d3.forceX(width / 2).strength(0.05))
         .force("y", d3.forceY(height / 2).strength(0.05))
         .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 5))
-        .force("charge", d3.forceManyBody().strength(-15))
+        .force("charge", d3.forceManyBody().strength(-20))
         .on("tick", ticked);
 
     function ticked() {
@@ -137,8 +140,6 @@
 
         const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
 
-        svg.selectAll(".bubble").remove();
-
         simulation.nodes(filteredData)
             .force("x", d3.forceX(width / 2).strength(0.05))
             .force("y", d3.forceY(height / 2).strength(0.05))
@@ -146,32 +147,33 @@
             .alpha(1)
             .restart();
 
-        bubbles = svg.selectAll(".bubble")
-            .data(filteredData, d => d.A)
-            .enter().append("g")
+        bubbles = bubbles.data(filteredData, d => d.A);
+
+        bubbles.exit().remove();
+
+        const newBubbles = bubbles.enter().append("g")
             .attr("class", "bubble");
 
-        bubbles.append("circle")
+        newBubbles.append("circle")
             .attr("r", d => radiusScale(d.count))
             .attr("fill", "url(#bubbleGradient)")
             .attr("stroke", "#1f77b4")
             .attr("stroke-width", 1)
             .style("filter", "url(#drop-shadow)");
 
-        bubbles.append("text")
+        newBubbles.append("text")
             .attr("class", "bubble-text")
             .attr("dy", ".3em")
             .text(d => d.A);
 
-        // Recenter bubbles
-        simulation.on("tick", ticked);
+        bubbles = newBubbles.merge(bubbles);
     });
 
     // Continuous movement of bubbles
     simulation
         .force("x", d3.forceX().x(d => d.x))
         .force("y", d3.forceY().y(d => d.y))
-        .velocityDecay(0.2); // Slower movement
+        .velocityDecay(0.15); // Slower movement
 </script>
 
 </body>
