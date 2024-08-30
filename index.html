@@ -26,10 +26,15 @@
             border-radius: 5px;
             pointer-events: none;
         }
+        .hexagon {
+            stroke: #333; /* Dark border for hexagons */
+            stroke-width: 1px;
+        }
         .hexagon-text {
             font-size: 10px;
             text-anchor: middle;
             dominant-baseline: middle;
+            fill: #333; /* Dark color for text */
             pointer-events: none; /* Ensures that text does not interfere with mouse events */
         }
     </style>
@@ -63,7 +68,7 @@
                     .x(d => d.x)
                     .y(d => d.y);
 
-                // Create color scale
+                // Create color scale with light colors
                 const color = d3.scaleSequential(d3.interpolateBlues)
                     .domain([0, d3.max(data, d => d.count)]);
 
@@ -76,9 +81,7 @@
                     .enter().append("path")
                     .attr("class", "hexagon")
                     .attr("d", d => `M${d.x},${d.y}${hexbin.hexagon()}`)
-                    .style("fill", d => color(d.length))
-                    .style("stroke", "#fff")
-                    .style("stroke-width", "1px")
+                    .style("fill", d => color(d.length)) // Light color
                     .on("mouseover", function(event, d) {
                         tooltip.transition().duration(200).style("opacity", .9);
                         tooltip.html(d.data.A + "<br/>Count: " + d.length)
@@ -97,7 +100,7 @@
                     .attr("x", d => d.x)
                     .attr("y", d => d.y)
                     .text(d => d.data.A)
-                    .style("fill", "#000")
+                    .style("fill", "#333") // Dark color for text
                     .style("font-size", "10px");
             }).catch(function(error) {
                 console.error('Error fetching data:', error);
