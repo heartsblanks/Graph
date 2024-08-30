@@ -22,17 +22,12 @@
             var cy = cytoscape({
                 container: document.getElementById('cy'),
                 elements: [
-                    // Parent node
                     { data: { id: '{{ data["parent"] }}', label: '{{ data["parent"] }}' } },
-
-                    // Children nodes
                     {% for table, children in data["children"].items() %}
                         {% for child in children %}
                             { data: { id: '{{ child }}', label: '{{ child }}' } },
                         {% endfor %}
                     {% endfor %}
-
-                    // Edges
                     {% for table, children in data["children"].items() %}
                         {% for child in children %}
                             { data: { source: '{{ data["parent"] }}', target: '{{ child }}' } },
@@ -64,12 +59,12 @@
                     }
                 ],
                 layout: {
-                    name: 'cose-bilkent',  // Advanced layout for better spacing
+                    name: 'cose-bilkent',
                     directed: true,
                     padding: 10,
                     animate: true,
-                    avoidOverlap: true,  // Ensure nodes do not overlap
-                    nodeOverlap: 10      // Adjust node overlap distance
+                    avoidOverlap: true,
+                    nodeOverlap: 10
                 }
             });
         });
