@@ -4,9 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Graph for {{ data['parent'] }}</title>
+    <style>
+        #cy {
+            width: 100%;
+            height: 800px; /* Increase height as needed */
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
     <h1>Graph for {{ data['parent'] }}</h1>
-    <div>{{ graph_html | safe }}</div>
+    <div id="cy">{{ graph_html | safe }}</div>
 </body>
 </html>
