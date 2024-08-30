@@ -99,52 +99,52 @@
                 }
 
                 d3.select("#search-box").on("input", function () {
-                    const searchTerm = this.value.toLowerCase();
+    const searchTerm = this.value.toLowerCase();
 
-                    // Filter data based on search term
-                    const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
+    // Filter data based on search term
+    const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
 
-                    // Update simulation with filtered data
-                    simulation.nodes(filteredData);
+    // Update simulation with filtered data
+    simulation.nodes(filteredData);
 
-                    const bubbleUpdate = bubbles.data(filteredData, d => d.A);
+    const bubbleUpdate = bubbles.data(filteredData, d => d.A);
 
-                    // Remove non-matching bubbles
-                    bubbleUpdate.exit().remove();
+    // Remove non-matching bubbles
+    bubbleUpdate.exit().remove();
 
-                    // Add new bubbles if needed
-                    const bubbleEnter = bubbleUpdate.enter().append("g")
-                        .attr("class", "bubble");
+    // Add new bubbles if needed
+    const bubbleEnter = bubbleUpdate.enter().append("g")
+        .attr("class", "bubble");
 
-                    bubbleEnter.append("circle")
-                        .attr("r", d => radiusScale(d.count))
-                        .attr("fill", "#1f77b4");
+    bubbleEnter.append("circle")
+        .attr("r", d => radiusScale(d.count))
+        .attr("fill", "#1f77b4");
 
-                    bubbleEnter.append("text")
-                        .attr("class", "bubble-text")
-                        .attr("dy", ".3em")
-                        .text(d => d.A);
+    bubbleEnter.append("text")
+        .attr("class", "bubble-text")
+        .attr("dy", ".3em")
+        .text(d => d.A);
 
-                    // Merge the existing bubbles with the new ones and update the position
-                    const bubbleMerge = bubbleEnter.merge(bubbleUpdate);
+    // Merge the existing bubbles with the new ones and update the position
+    const bubbleMerge = bubbleEnter.merge(bubbleUpdate);
 
-                    bubbleMerge.select("circle")
-                        .transition()
-                        .duration(750)
-                        .attr("r", d => radiusScale(d.count));
+    bubbleMerge.select("circle")
+        .transition()
+        .duration(750)
+        .attr("r", d => radiusScale(d.count));
 
-                    bubbleMerge.select(".bubble-text")
-                        .text(d => d.A);
+    bubbleMerge.select(".bubble-text")
+        .text(d => d.A);
 
-                    // Re-center and spread the bubbles
-                    simulation
-                        .force("center", d3.forceCenter(width / 2, height / 2))
-                        .force("x", d3.forceX().strength(0.05))
-                        .force("y", d3.forceY().strength(0.05))
-                        .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
-                        .alpha(1)
-                        .restart();
-                });
+    // Re-center and spread the bubbles
+    simulation
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("x", d3.forceX().strength(0.05))
+        .force("y", d3.forceY().strength(0.05))
+        .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
+        .alpha(1)
+        .restart();
+});
 
                 window.addEventListener('resize', function() {
                     const newWidth = window.innerWidth;
