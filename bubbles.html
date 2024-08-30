@@ -79,7 +79,11 @@
                     .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
                     .on("tick", ticked);
 
-                const bubbles = svg.selectAll(".bubble")
+                function ticked() {
+                    bubbles.attr("transform", d => `translate(${d.x},${d.y})`);
+                }
+
+                let bubbles = svg.selectAll(".bubble")
                     .data(data)
                     .enter().append("g")
                     .attr("class", "bubble");
@@ -93,49 +97,37 @@
                     .attr("dy", ".3em")
                     .text(d => d.A);
 
-                function ticked() {
-                    bubbles
-                        .attr("transform", d => `translate(${d.x},${d.y})`);
-                }
-
                 d3.select("#search-box").on("input", function () {
-    const searchTerm = this.value.toLowerCase();
+                    const searchTerm = this.value.toLowerCase();
 
-    // Filter data based on search term
-    const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
+                    const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
 
-    // Remove all existing bubbles from the SVG
-    svg.selectAll(".bubble").remove();
+                    svg.selectAll(".bubble").remove();
 
-    // Recreate the simulation with the filtered data
-    simulation.nodes(filteredData)
-        .force("center", d3.forceCenter(width / 2, height / 2))
-        .force("x", d3.forceX(width / 2).strength(0.05))
-        .force("y", d3.forceY(height / 2).strength(0.05))
-        .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
-        .alpha(1)
-        .restart();
+                    simulation.nodes(filteredData)
+                        .force("center", d3.forceCenter(width / 2, height / 2))
+                        .force("x", d3.forceX(width / 2).strength(0.05))
+                        .force("y", d3.forceY(height / 2).strength(0.05))
+                        .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
+                        .alpha(1)
+                        .restart();
 
-    // Re-bind data and recreate bubbles
-    const bubbles = svg.selectAll(".bubble")
-        .data(filteredData, d => d.A)
-        .enter().append("g")
-        .attr("class", "bubble");
+                    bubbles = svg.selectAll(".bubble")
+                        .data(filteredData, d => d.A)
+                        .enter().append("g")
+                        .attr("class", "bubble");
 
-    bubbles.append("circle")
-        .attr("r", d => radiusScale(d.count))
-        .attr("fill", "#1f77b4");
+                    bubbles.append("circle")
+                        .attr("r", d => radiusScale(d.count))
+                        .attr("fill", "#1f77b4");
 
-    bubbles.append("text")
-        .attr("class", "bubble-text")
-        .attr("dy", ".3em")
-        .text(d => d.A);
+                    bubbles.append("text")
+                        .attr("class", "bubble-text")
+                        .attr("dy", ".3em")
+                        .text(d => d.A);
 
-    // Update the position of the bubbles as the simulation runs
-    simulation.on("tick", function () {
-        bubbles.attr("transform", d => `translate(${d.x},${d.y})`);
-    });
-});
+                    simulation.on("tick", ticked);
+                });
 
                 window.addEventListener('resize', function() {
                     const newWidth = window.innerWidth;
