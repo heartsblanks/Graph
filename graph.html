@@ -4,70 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Graph for {{ data['parent'] }}</title>
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js"></script>
-    <style>
-        #cy {
-            width: 100%;
-            height: 600px;
-            border: 1px solid #ccc;
-        }
-    </style>
 </head>
 <body>
     <h1>Graph for {{ data['parent'] }}</h1>
-    <div id="cy"></div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var cy = cytoscape({
-                container: document.getElementById('cy'),
-                elements: [
-                    { data: { id: '{{ data["parent"] }}', label: '{{ data["parent"] }}' } },
-                    {% for table, children in data["children"].items() %}
-                        {% for child in children %}
-                            { data: { id: '{{ child }}', label: '{{ child }}' } },
-                        {% endfor %}
-                    {% endfor %}
-                    {% for table, children in data["children"].items() %}
-                        {% for child in children %}
-                            { data: { source: '{{ data["parent"] }}', target: '{{ child }}' } },
-                        {% endfor %}
-                    {% endfor %}
-                ],
-                style: [
-                    {
-                        selector: 'node',
-                        style: {
-                            'background-color': '#666',
-                            'label': 'data(label)',
-                            'text-valign': 'center',
-                            'text-halign': 'center',
-                            'width': 'label',
-                            'height': 'label',
-                            'font-size': '12px',
-                            'color': '#fff'
-                        }
-                    },
-                    {
-                        selector: 'edge',
-                        style: {
-                            'width': 2,
-                            'line-color': '#ddd',
-                            'target-arrow-color': '#ddd',
-                            'target-arrow-shape': 'triangle'
-                        }
-                    }
-                ],
-                layout: {
-                    name: 'cose-bilkent',
-                    directed: true,
-                    padding: 10,
-                    animate: true,
-                    avoidOverlap: true,
-                    nodeOverlap: 10
-                }
-            });
-        });
-    </script>
+    <div>{{ graph_html | safe }}</div>
 </body>
 </html>
