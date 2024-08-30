@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Graph Visualization</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Graph for Selected Value: {{ selected_value }}</h1>
+    <div id="graph"></div>
+
+    <script>
+        var selectedValue = "{{ selected_value }}";
+        var combinedValues = {{ combined_values | safe }};
+        
+        // Create a data object for the graph
+        var data = [{
+            type: 'sankey',
+            orientation: 'h',
+            node: {
+                pad: 15,
+                thickness: 20,
+                line: {
+                    color: 'black',
+                    width: 0.5
+                },
+                label: [selectedValue].concat(combinedValues),
+                color: 'blue'
+            },
+            link: {
+                source: Array(combinedValues.length).fill(0),
+                target: Array.from({length: combinedValues.length}, (v, k) => k + 1),
+                value: Array(combinedValues.length).fill(1)
+            }
+        }];
+
+        var layout = {
+            title: 'Connections from Column A to Column D',
+            font: {
+                size: 10
+            }
+        };
+
+        Plotly.newPlot('graph', data, layout);
+    </script>
+</body>
+</html>
