@@ -1,5 +1,6 @@
 import sqlite3
 import csv
+import pandas as pd
 
 class DatabaseManager:
     def __init__(self, db_name='example.db'):
@@ -41,3 +42,14 @@ class DatabaseManager:
         results = cursor.fetchall()
         conn.close()
         return results
+
+    def get_coordinates(self):
+        conn = sqlite3.connect(self.db_name)
+        query = 'SELECT A FROM table1 UNION SELECT A FROM table2'
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+
+        # Generate coordinates
+        df['x'] = df.index % 50 * 20  # Adjust as needed
+        df['y'] = df.index // 50 * 20 # Adjust as needed
+        return df[['x', 'y']].to_dict(orient='records')
