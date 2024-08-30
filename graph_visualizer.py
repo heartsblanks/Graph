@@ -1,7 +1,3 @@
-import networkx as nx
-import plotly.graph_objects as go
-import pandas as pd
-
 class GraphVisualizer:
     def __init__(self):
         pass
@@ -27,7 +23,7 @@ class GraphVisualizer:
         """
         Generates a Plotly graph from a NetworkX graph.
         """
-        pos = nx.spring_layout(G)  # Use spring layout for positioning nodes
+        pos = nx.spring_layout(G, seed=42)  # Use a fixed seed for consistent layout
 
         edge_x = []
         edge_y = []
@@ -46,11 +42,14 @@ class GraphVisualizer:
         fig = go.Figure()
 
         fig.add_trace(go.Scatter(x=edge_x, y=edge_y, mode='lines', line=dict(width=2, color='black')))
+
         fig.add_trace(go.Scatter(x=node_x, y=node_y, mode='markers+text', text=node_text,
-                                 textposition='bottom center', marker=dict(size=10, color='blue')))
+                                 textposition='bottom center', marker=dict(size=20, color='blue')))  # Increased marker size
 
         fig.update_layout(title='Network Graph', showlegend=False,
                           xaxis=dict(showgrid=False, zeroline=False),
-                          yaxis=dict(showgrid=False, zeroline=False))
+                          yaxis=dict(showgrid=False, zeroline=False),
+                          width=1000,  # Increase width as needed
+                          height=800)  # Increase height as needed
 
         return fig.to_html(full_html=False)
