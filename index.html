@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hexbin Map</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-hexbin.v0.2.2/d3-hexbin.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,7 +21,7 @@
     <div id="hexbin"></div>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // Load data from the Flask server
+            // Load data from Flask server
             d3.json('/data').then(function(data) {
                 const width = 960;
                 const height = 600;
@@ -32,8 +33,8 @@
 
                 const hexbin = d3.hexbin()
                     .radius(hexRadius)
-                    .x(d => d[0])
-                    .y(d => d[1]);
+                    .x(d => d.x)
+                    .y(d => d.y);
 
                 const color = d3.scaleSequential(d3.interpolateBlues)
                     .domain([0, d3.max(data, d => d.length)]);
@@ -45,8 +46,6 @@
                     .style("fill", d => color(d.length))
                     .style("stroke", "#fff")
                     .style("stroke-width", "1px");
-
-                // Add labels or other elements as needed
             });
         });
     </script>
