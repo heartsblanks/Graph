@@ -2,18 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Select a Value</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask App</title>
 </head>
 <body>
-    <h1>Select a Value from Column A</h1>
-    <form method="POST" action="/get_data">
-        <label for="values">Select a value:</label>
-        <select name="selected_value" id="values">
-            {% for value in unique_values %}
-                <option value="{{ value }}">{{ value }}</option>
-            {% endfor %}
-        </select>
-        <input type="submit" value="Submit">
+    <h1>Welcome to the Flask App</h1>
+    <form action="/get_data" method="post">
+        <label for="column_value">Select Value:</label>
+        <input type="text" id="column_value" name="column_value">
+        <button type="submit">Submit</button>
     </form>
 </body>
 </html>
