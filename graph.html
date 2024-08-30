@@ -2,46 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Graph Visualization</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph for {{ value }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Graph for Selected Value: {{ selected_value }}</h1>
-    <div id="graph"></div>
+    <h1>Graph for {{ value }}</h1>
+    <canvas id="myChart"></canvas>
 
     <script>
-        var selectedValue = "{{ selected_value }}";
-        var combinedValues = {{ combined_values | safe }};
-        
-        // Create a data object for the graph
-        var data = [{
-            type: 'sankey',
-            orientation: 'h',
-            node: {
-                pad: 15,
-                thickness: 20,
-                line: {
-                    color: 'black',
-                    width: 0.5
-                },
-                label: [selectedValue].concat(combinedValues),
-                color: 'blue'
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'bar', // Change to the type of chart you want
+            data: {
+                labels: ['Table 1', 'Table 2'], // Adjust labels as needed
+                datasets: [{
+                    label: 'Values from Column D',
+                    data: [
+                        {{ data['table1']|length }},
+                        {{ data['table2']|length }}
+                    ],
+                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(153, 102, 255, 0.2)'],
+                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
+                    borderWidth: 1
+                }]
             },
-            link: {
-                source: Array(combinedValues.length).fill(0),
-                target: Array.from({length: combinedValues.length}, (v, k) => k + 1),
-                value: Array(combinedValues.length).fill(1)
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
             }
-        }];
-
-        var layout = {
-            title: 'Connections from Column A to Column D',
-            font: {
-                size: 10
-            }
-        };
-
-        Plotly.newPlot('graph', data, layout);
+        });
     </script>
 </body>
 </html>
