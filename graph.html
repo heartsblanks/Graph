@@ -3,37 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Graph for {{ value }}</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Graph for {{ data['parent'] }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js"></script>
+    <style>
+        #cy {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
-    <h1>Graph for {{ value }}</h1>
-    <canvas id="myChart"></canvas>
+    <h1>Graph for {{ data['parent'] }}</h1>
+    <div id="cy"></div>
 
     <script>
-        var ctx = document.getElementById('myChart').getContext('2d');
-        var chart = new Chart(ctx, {
-            type: 'bar', // Change to the type of chart you want
-            data: {
-                labels: ['Table 1', 'Table 2'], // Adjust labels as needed
-                datasets: [{
-                    label: 'Values from Column D',
-                    data: [
-                        {{ data['table1']|length }},
-                        {{ data['table2']|length }}
-                    ],
-                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(153, 102, 255, 0.2)'],
-                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+        document.addEventListener('DOMContentLoaded', function() {
+            var cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: [
+                    // Parent node
+                    { data: { id: '{{ data["parent"] }}', label: '{{ data["parent"] }}' } },
+
+                    // Children nodes
+                    {% for table, children in data["children"].items() %}
+                        {% for child in children %}
+                            { data: { id: '{{ child }}', label: '{{ child }}' } },
+                        {% endfor %}
+                    {% endfor %}
+
+                    // Edges
+                    {% for table, children in data["children"].items() %}
+                        {% for child in children %}
+                            { data: { source: '{{ data["parent"] }}', target: '{{ child }}' } },
+                        {% endfor %}
+                    {% endfor %}
+                ],
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#666',
+                            'label': 'data(label)'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#ddd',
+                            'target-arrow-color': '#ddd',
+                            'target-arrow-shape': 'triangle'
+                        }
                     }
+                ],
+                layout: {
+                    name: 'cose',
+                    directed: true,
+                    padding: 10
                 }
-            }
+            });
         });
     </script>
 </body>
