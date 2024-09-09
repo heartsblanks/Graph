@@ -76,173 +76,174 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            d3.json('/data').then(function (data) {
-                if (!data || data.length === 0) {
-                    console.error('No data received or data is empty');
-                    return;
-                }
+    d3.json('/data').then(function (data) {
+        if (!data || data.length === 0) {
+            console.error('No data received or data is empty');
+            return;
+        }
 
-                const width = window.innerWidth;
-                const height = window.innerHeight;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-                const svg = d3.select("#bubble-chart").append("svg")
-                    .attr("width", width)
-                    .attr("height", height);
+        const svg = d3.select("#bubble-chart").append("svg")
+            .attr("width", width)
+            .attr("height", height);
 
-                const radiusScale = d3.scaleSqrt()
-                    .domain([1, d3.max(data, d => d.count)])
-                    .range([20, 60]);
+        const radiusScale = d3.scaleSqrt()
+            .domain([1, d3.max(data, d => d.count)])
+            .range([20, 60]);
 
-                let simulation = d3.forceSimulation(data)
-                    .force("charge", d3.forceManyBody().strength(-15))
-                    .force("center", d3.forceCenter(width / 2, height / 2))
-                    .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
-                    .on("tick", ticked);
+        let simulation = d3.forceSimulation(data)
+            .force("charge", d3.forceManyBody().strength(-15))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
+            .on("tick", ticked);
 
-                function ticked() {
-                    bubbles.attr("transform", d => `translate(${d.x},${d.y})`);
-                }
+        let bubbles = svg.selectAll(".bubble")
+            .data(data)
+            .enter().append("g")
+            .attr("class", "bubble");
 
-                let bubbles = svg.selectAll(".bubble")
-                    .data(data)
-                    .enter().append("g")
-                    .attr("class", "bubble");
+        bubbles.append("circle")
+            .attr("r", d => radiusScale(d.count))
+            .attr("fill", "#1f77b4");
 
-                bubbles.append("circle")
-                    .attr("r", d => radiusScale(d.count))
-                    .attr("fill", "#1f77b4");
+        bubbles.append("text")
+            .attr("class", "bubble-text")
+            .attr("dy", ".3em")
+            .text(d => d.A);
 
-                bubbles.append("text")
-                    .attr("class", "bubble-text")
-                    .attr("dy", ".3em")
-                    .text(d => d.A);
+        // Function to add click event listener
+        function addClickListeners() {
+            bubbles.on("click", function (event, d) {
+                fetch(`/graph/${d.A}`)
+                    .then(response => response.json())
+                    .then(graphData => {
+                        document.getElementById('graph-content').innerHTML = ''; // Clear previous graph content
+                        document.getElementById('graph-container').style.display = 'block'; // Show the graph container
 
-                // Add click event listener
-                bubbles.on("click", function (event, d) {
-    fetch(`/graph/${d.A}`)
-        .then(response => response.json())
-        .then(graphData => {
-            // Clear any existing content in the graph container
-            document.getElementById('graph-content').innerHTML = '';
+                        const svgGraph = d3.select("#graph-content").append("svg")
+                            .attr("width", width)
+                            .attr("height", height);
 
-            // Show the graph container
-            document.getElementById('graph-container').style.display = 'block';
+                        const linkForce = d3.forceLink(graphData.links).id(d => d.id).distance(150);
 
-            // Set up the force-directed graph
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            
-            const svg = d3.select("#graph-content").append("svg")
-                .attr("width", width)
-                .attr("height", height);
+                        const simulationGraph = d3.forceSimulation(graphData.nodes)
+                            .force("link", linkForce)
+                            .force("charge", d3.forceManyBody().strength(-300))
+                            .force("center", d3.forceCenter(width / 2, height / 2))
+                            .on("tick", tickedGraph);
 
-            const linkForce = d3.forceLink(graphData.links).id(d => d.id).distance(150);
+                        const link = svgGraph.append("g")
+                            .selectAll("line")
+                            .data(graphData.links)
+                            .enter().append("line")
+                            .attr("stroke-width", 2)
+                            .attr("marker-end", "url(#arrow)");
 
-            const simulation = d3.forceSimulation(graphData.nodes)
-                .force("link", linkForce)
-                .force("charge", d3.forceManyBody().strength(-300))
-                .force("center", d3.forceCenter(width / 2, height / 2))
-                .on("tick", ticked);
+                        const node = svgGraph.append("g")
+                            .selectAll("circle")
+                            .data(graphData.nodes)
+                            .enter().append("circle")
+                            .attr("r", 10)
+                            .attr("fill", d => d.group === 1 ? "#1f77b4" : "#ff7f0e");
 
-            const link = svg.append("g")
-                .selectAll("line")
-                .data(graphData.links)
-                .enter().append("line")
-                .attr("stroke-width", 2)
-                .attr("marker-end", "url(#arrow)");  // Add arrow markers to links
+                        const label = svgGraph.append("g")
+                            .selectAll("text")
+                            .data(graphData.nodes)
+                            .enter().append("text")
+                            .attr("dy", -15)
+                            .attr("text-anchor", "middle")
+                            .text(d => d.id);
 
-            const node = svg.append("g")
-                .selectAll("circle")
-                .data(graphData.nodes)
-                .enter().append("circle")
-                .attr("r", 10)
-                .attr("fill", d => d.group === 1 ? "#1f77b4" : "#ff7f0e");
+                        function tickedGraph() {
+                            link.attr("x1", d => d.source.x)
+                                .attr("y1", d => d.source.y)
+                                .attr("x2", d => d.target.x)
+                                .attr("y2", d => d.target.y);
 
-            const label = svg.append("g")
-                .selectAll("text")
-                .data(graphData.nodes)
-                .enter().append("text")
-                .attr("dy", -15)
-                .attr("text-anchor", "middle")
-                .text(d => d.id);
+                            node.attr("cx", d => d.x)
+                                .attr("cy", d => d.y);
 
-            function ticked() {
-                link.attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
+                            label.attr("x", d => d.x)
+                                .attr("y", d => d.y);
+                        }
 
-                node.attr("cx", d => d.x)
-                    .attr("cy", d => d.y);
-
-                label.attr("x", d => d.x)
-                    .attr("y", d => d.y);
-            }
-
-            // Add arrow marker definition
-            svg.append("defs").append("marker")
-                .attr("id", "arrow")
-                .attr("viewBox", "0 -5 10 10")
-                .attr("refX", 15)
-                .attr("refY", 0)
-                .attr("markerWidth", 6)
-                .attr("markerHeight", 6)
-                .attr("orient", "auto")
-                .append("path")
-                .attr("d", "M0,-5L10,0L0,5")
-                .attr("fill", "#999");
-
-        })
-        .catch(error => console.error('Error fetching graph data:', error));
-});
-
-                d3.select("#search-box").on("input", function () {
-                    const searchTerm = this.value.toLowerCase();
-
-                    const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
-
-                    svg.selectAll(".bubble").remove();
-
-                    simulation.nodes(filteredData)
-                        .force("center", d3.forceCenter(width / 2, height / 2))
-                        .force("x", d3.forceX(width / 2).strength(0.05))
-                        .force("y", d3.forceY(height / 2).strength(0.05))
-                        .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
-                        .alpha(1)
-                        .restart();
-
-                    bubbles = svg.selectAll(".bubble")
-                        .data(filteredData, d => d.A)
-                        .enter().append("g")
-                        .attr("class", "bubble");
-
-                    bubbles.append("circle")
-                        .attr("r", d => radiusScale(d.count))
-                        .attr("fill", "#1f77b4");
-
-                    bubbles.append("text")
-                        .attr("class", "bubble-text")
-                        .attr("dy", ".3em")
-                        .text(d => d.A);
-
-                    simulation.on("tick", ticked);
-                });
-
-                window.addEventListener('resize', function() {
-                    const newWidth = window.innerWidth;
-                    const newHeight = window.innerHeight;
-                    svg.attr("width", newWidth).attr("height", newHeight);
-                    simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2));
-                    simulation.alpha(0.5).restart();
-                });
-
-                document.getElementById('close-graph').addEventListener('click', function () {
-                    document.getElementById('graph-container').style.display = 'none';
-                });
-            }).catch(function (error) {
-                console.error('Error fetching data:', error);
+                        // Arrow marker definition
+                        svgGraph.append("defs").append("marker")
+                            .attr("id", "arrow")
+                            .attr("viewBox", "0 -5 10 10")
+                            .attr("refX", 15)
+                            .attr("refY", 0)
+                            .attr("markerWidth", 6)
+                            .attr("markerHeight", 6)
+                            .attr("orient", "auto")
+                            .append("path")
+                            .attr("d", "M0,-5L10,0L0,5")
+                            .attr("fill", "#999");
+                    })
+                    .catch(error => console.error('Error fetching graph data:', error));
             });
+        }
+
+        // Call the function to attach click listeners initially
+        addClickListeners();
+
+        d3.select("#search-box").on("input", function () {
+            const searchTerm = this.value.toLowerCase();
+            const filteredData = data.filter(d => d.A.toLowerCase().includes(searchTerm));
+
+            // Remove old bubbles and restart the simulation with filtered data
+            svg.selectAll(".bubble").remove();
+
+            simulation.nodes(filteredData)
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("x", d3.forceX(width / 2).strength(0.05))
+                .force("y", d3.forceY(height / 2).strength(0.05))
+                .force("collision", d3.forceCollide().radius(d => radiusScale(d.count) + 2).strength(1))
+                .alpha(1)
+                .restart();
+
+            // Recreate bubbles with filtered data
+            bubbles = svg.selectAll(".bubble")
+                .data(filteredData, d => d.A)
+                .enter().append("g")
+                .attr("class", "bubble");
+
+            bubbles.append("circle")
+                .attr("r", d => radiusScale(d.count))
+                .attr("fill", "#1f77b4");
+
+            bubbles.append("text")
+                .attr("class", "bubble-text")
+                .attr("dy", ".3em")
+                .text(d => d.A);
+
+            // Reapply the click event to the filtered bubbles
+            addClickListeners();
+
+            simulation.on("tick", ticked);
         });
-    </script>
+
+        function ticked() {
+            bubbles.attr("transform", d => `translate(${d.x},${d.y})`);
+        }
+
+        window.addEventListener('resize', function() {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
+            svg.attr("width", newWidth).attr("height", newHeight);
+            simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2));
+            simulation.alpha(0.5).restart();
+        });
+
+        document.getElementById('close-graph').addEventListener('click', function () {
+            document.getElementById('graph-container').style.display = 'none';
+        });
+    }).catch(function (error) {
+        console.error('Error fetching data:', error);
+    });
+});
+</script>
 </body>
 </html>
