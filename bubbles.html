@@ -119,15 +119,82 @@
 
                 // Add click event listener
                 bubbles.on("click", function (event, d) {
-                    fetch(`/graph/${d.A}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            // Display the graph container and insert graph HTML
-                            document.getElementById('graph-content').innerHTML = data.graph_html;
-                            document.getElementById('graph-container').style.display = 'block';
-                        })
-                        .catch(error => console.error('Error fetching graph data:', error));
-                });
+    fetch(`/graph/${d.A}`)
+        .then(response => response.json())
+        .then(graphData => {
+            // Clear any existing content in the graph container
+            document.getElementById('graph-content').innerHTML = '';
+
+            // Show the graph container
+            document.getElementById('graph-container').style.display = 'block';
+
+            // Set up the force-directed graph
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            
+            const svg = d3.select("#graph-content").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            const linkForce = d3.forceLink(graphData.links).id(d => d.id).distance(150);
+
+            const simulation = d3.forceSimulation(graphData.nodes)
+                .force("link", linkForce)
+                .force("charge", d3.forceManyBody().strength(-300))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .on("tick", ticked);
+
+            const link = svg.append("g")
+                .selectAll("line")
+                .data(graphData.links)
+                .enter().append("line")
+                .attr("stroke-width", 2)
+                .attr("marker-end", "url(#arrow)");  // Add arrow markers to links
+
+            const node = svg.append("g")
+                .selectAll("circle")
+                .data(graphData.nodes)
+                .enter().append("circle")
+                .attr("r", 10)
+                .attr("fill", d => d.group === 1 ? "#1f77b4" : "#ff7f0e");
+
+            const label = svg.append("g")
+                .selectAll("text")
+                .data(graphData.nodes)
+                .enter().append("text")
+                .attr("dy", -15)
+                .attr("text-anchor", "middle")
+                .text(d => d.id);
+
+            function ticked() {
+                link.attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                node.attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+
+                label.attr("x", d => d.x)
+                    .attr("y", d => d.y);
+            }
+
+            // Add arrow marker definition
+            svg.append("defs").append("marker")
+                .attr("id", "arrow")
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 15)
+                .attr("refY", 0)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 6)
+                .attr("orient", "auto")
+                .append("path")
+                .attr("d", "M0,-5L10,0L0,5")
+                .attr("fill", "#999");
+
+        })
+        .catch(error => console.error('Error fetching graph data:', error));
+});
 
                 d3.select("#search-box").on("input", function () {
                     const searchTerm = this.value.toLowerCase();
