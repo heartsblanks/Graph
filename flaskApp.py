@@ -22,9 +22,26 @@ class FlaskApp:
 
         @self.app.route('/graph/<value>', methods=['GET'])
         def graph(value):
-            query1 = 'SELECT D FROM table1 WHERE A = ?'
-            query2 = 'SELECT D FROM table2 WHERE A = ?'
-            data1 = self.db_manager.query_database(query1, (value,))
+            query1 = '''
+        SELECT DISTINCT 
+            SUBSTR(D, 
+                INSTR(D, '_', INSTR(D, '_') + 1) + 1, 
+                INSTR(D, '_', INSTR(D, '_', INSTR(D, '_') + 1) + 1) - INSTR(D, '_', INSTR(D, '_') + 1) - 1
+            ) AS destination
+        FROM table1
+        WHERE A = ? AND D LIKE '%_%_%_%'
+    '''
+    
+    query2 = '''
+        SELECT DISTINCT 
+            SUBSTR(D, 
+                INSTR(D, '_', INSTR(D, '_') + 1) + 1, 
+                INSTR(D, '_', INSTR(D, '_', INSTR(D, '_') + 1) + 1) - INSTR(D, '_', INSTR(D, '_') + 1) - 1
+            ) AS destination
+        FROM table2
+        WHERE A = ? AND D LIKE '%_%_%_%'
+    '''
+data1 = self.db_manager.query_database(query1, (value,))
             data2 = self.db_manager.query_database(query2, (value,))
 
             combined_data = {
