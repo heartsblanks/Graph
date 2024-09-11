@@ -133,10 +133,13 @@
                     fetch(`/graph/${d.A}`)
                         .then(response => response.json())
                         .then(graphData => {
+                            // Clear previous graph content
+                            d3.select("#graph-content").selectAll("*").remove();
+                            
                             // Display the graph container and insert graph HTML
                             document.getElementById('graph-container').style.display = 'block';
                             
-                            // Initialize the force-directed graph
+                            // Initialize the force-directed graph with the correct data
                             initializeGraph(graphData);
                         })
                         .catch(error => console.error('Error fetching graph data:', error));
