@@ -20,43 +20,32 @@ class FlaskApp:
             coordinates = self.db_manager.get_coordinates()
             return jsonify(coordinates)
 
-        @self.app.route('/graph/<value>', methods=['GET'])
-        def graph(value):
-            query1 = '''
-        SELECT DISTINCT 
-            SUBSTR(D, 
-                INSTR(D, '_', INSTR(D, '_') + 1) + 1, 
-                INSTR(D, '_', INSTR(D, '_', INSTR(D, '_') + 1) + 1) - INSTR(D, '_', INSTR(D, '_') + 1) - 1
-            ) AS destination
-        FROM table1
-        WHERE A = ? AND D LIKE '%_%_%_%'
-    '''
-    
-    query2 = '''
-        SELECT DISTINCT 
-            SUBSTR(D, 
-                INSTR(D, '_', INSTR(D, '_') + 1) + 1, 
-                INSTR(D, '_', INSTR(D, '_', INSTR(D, '_') + 1) + 1) - INSTR(D, '_', INSTR(D, '_') + 1) - 1
-            ) AS destination
-        FROM table2
-        WHERE A = ? AND D LIKE '%_%_%_%'
-    '''
-data1 = self.db_manager.query_database(query1, (value,))
-            data2 = self.db_manager.query_database(query2, (value,))
+        @app.route('/graph/<value>', methods=['GET'])
+def graph(value):
+    query1 = 'SELECT D, F, G FROM table1 WHERE A = ?'
+    query2 = 'SELECT D, F, G FROM table2 WHERE A = ?'
+    data1 = self.db_manager.query_database(query1, (value,))
+    data2 = self.db_manager.query_database(query2, (value,))
 
-            combined_data = {
-                'parent': value,
-                'children': {
-                    'table1': [d[0] for d in data1],
-                    'table2': [d[0] for d in data2]
-                }
-            }
+    # Combine data from both tables
+    destinations = data1 + data2  # This will contain D, F, and G now
 
-            # Create and generate Plotly graph
-            G = self.graph_visualizer.create_graph(value, combined_data['children'])
-            graph_html = self.graph_visualizer.generate_plotly_graph(G)
+    nodes = [{'id': value, 'group': 1}]  # The source node
+    links = []
 
-            return render_template('graph.html', graph_html=graph_html)
+    for dest in destinations:
+        destination, column_f, column_g = dest[0], dest[1], dest[2]
+        if destination not in [node['id'] for node in nodes]:
+            nodes.append({'id': destination, 'group': 2})  # Destination nodes
+        links.append({
+            'source': value, 
+            'target': destination, 
+            'f_data': column_f,  # Add F data
+            'g_data': column_g   # Add G data
+        })
+
+    graph_data = {'nodes': nodes, 'links': links}
+    return jsonify(graph_data)
 
 if __name__ == '__main__':
     app.run(debug=True)
