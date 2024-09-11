@@ -129,26 +129,20 @@
                     .text(d => d.A);
 
                 // Add click event listener
-                function applyClickHandlers() {
-                    bubbles.on("click", function (event, d) {
-                        fetch(`/graph/${d.A}`)
-                            .then(response => response.json())
-                            .then(graphData => {
-                                // Clear previous graph content
-                                d3.select("#graph-content").selectAll("*").remove();
-                                
-                                // Display the graph container and insert graph HTML
-                                document.getElementById('graph-container').style.display = 'block';
-                                
-                                // Initialize the force-directed graph with the correct data
-                                initializeGraph(graphData);
-                            })
-                            .catch(error => console.error('Error fetching graph data:', error));
-                    });
-                }
-                applyClickHandlers();
+                bubbles.on("click", function (event, d) {
+                    fetch(`/graph/${d.A}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            // Display the graph container and insert graph HTML
+                            document.getElementById('graph-content').innerHTML = data.graph_html;
+                            document.getElementById('graph-container').style.display = 'block';
 
-                // Filter functionality
+                            // Initialize the force-directed graph
+                            initializeGraph();
+                        })
+                        .catch(error => console.error('Error fetching graph data:', error));
+                });
+
                 d3.select("#search-box").on("input", function () {
                     const searchTerm = this.value.toLowerCase();
 
@@ -179,9 +173,6 @@
                         .text(d => d.A);
 
                     simulation.on("tick", ticked);
-
-                    // Reapply click handlers after filtering
-                    applyClickHandlers();
                 });
 
                 window.addEventListener('resize', function() {
@@ -196,70 +187,72 @@
                     document.getElementById('graph-container').style.display = 'none';
                 });
 
-                function initializeGraph(graphData) {
-                    const svgGraph = d3.select("#graph-content").append("svg")
-                        .attr("width", "100%")
-                        .attr("height", "100%");
+                function initializeGraph() {
+                    d3.json(`/graph/${d.A}`).then(function (graphData) {
+                        const svg = d3.select("#graph-content").append("svg")
+                            .attr("width", "100%")
+                            .attr("height", "100%");
 
-                    const width = svgGraph.node().clientWidth;
-                    const height = svgGraph.node().clientHeight;
+                        const width = svg.node().clientWidth;
+                        const height = svg.node().clientHeight;
 
-                    const simulation = d3.forceSimulation(graphData.nodes)
-                        .force("link", d3.forceLink(graphData.links).id(d => d.id))  // This ensures links are bound properly
-                        .force("charge", d3.forceManyBody())
-                        .force("center", d3.forceCenter(width / 2, height / 2))
-                        .on("tick", ticked);
+                        const simulation = d3.forceSimulation(graphData.nodes)
+                            .force("link", d3.forceLink(graphData.links).id(d => d.id))
+                            .force("charge", d3.forceManyBody())
+                            .force("center", d3.forceCenter(width / 2, height / 2))
+                            .on("tick", ticked);
 
-                    const link = svgGraph.append("g")
-                        .attr("class", "links")
-                        .selectAll("line")
-                        .data(graphData.links)
-                        .enter().append("line")
-                        .attr("class", "link");
+                        const link = svg.append("g")
+                            .attr("class", "links")
+                            .selectAll("line")
+                            .data(graphData.links)
+                            .enter().append("line")
+                            .attr("class", "link");
 
-                    const node = svgGraph.append("g")
-                        .attr("class", "nodes")
-                        .selectAll("circle")
-                        .data(graphData.nodes)
-                        .enter().append("circle")
-                        .attr("r", 10)
-                        .attr("fill", "#1f77b4")
-                        .call(d3.drag()
-                            .on("start", dragstarted)
-                            .on("drag", dragged)
-                            .on("end", dragended));
+                        const node = svg.append("g")
+                            .attr("class", "nodes")
+                            .selectAll("circle")
+                            .data(graphData.nodes)
+                            .enter().append("circle")
+                            .attr("r", 10)
+                            .attr("fill", "#1f77b4")
+                            .call(d3.drag()
+                                .on("start", dragstarted)
+                                .on("drag", dragged)
+                                .on("end", dragended));
 
-                    node.append("title")
-                        .text(d => d.id);
+                        node.append("title")
+                            .text(d => d.id);
 
-                    function ticked() {
-                        link
-                            .attr("x1", d => d.source.x)
-                            .attr("y1", d => d.source.y)
-                            .attr("x2", d => d.target.x)
-                            .attr("y2", d => d.target.y);
+                        function ticked() {
+                            link
+                                .attr("x1", d => d.source.x)
+                                .attr("y1", d => d.source.y)
+                                .attr("x2", d => d.target.x)
+                                .attr("y2", d => d.target.y);
 
-                        node
-                            .attr("cx", d => d.x)
-                            .attr("cy", d => d.y);
-                    }
+                            node
+                                .attr("cx", d => d.x)
+                                .attr("cy", d => d.y);
+                        }
 
-                    function dragstarted(event, d) {
-                        if (!event.active) simulation.alphaTarget(0.3).restart();
-                        d.fx = d.x;
-                        d.fy = d.y;
-                    }
+                        function dragstarted(event, d) {
+                            if (!event.active) simulation.alphaTarget(0.3).restart();
+                            d.fx = d.x;
+                            d.fy = d.y;
+                        }
 
-                    function dragged(event, d) {
-                        d.fx = event.x;
-                        d.fy = event.y;
-                    }
+                        function dragged(event, d) {
+                            d.fx = event.x;
+                            d.fy = event.y;
+                        }
 
-                    function dragended(event, d) {
-                        if (!event.active) simulation.alphaTarget(0);
-                        d.fx = null;
-                        d.fy = null;
-                    }
+                        function dragended(event, d) {
+                            if (!event.active) simulation.alphaTarget(0);
+                            d.fx = null;
+                            d.fy = null;
+                        }
+                    });
                 }
             }).catch(function (error) {
                 console.error('Error fetching data:', error);
