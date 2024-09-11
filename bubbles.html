@@ -10,7 +10,7 @@
     </style>
 </head>
 <body>
-    <!-- HTML Structure same as before -->
+    <!-- HTML Structure remains the same -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             d3.json('/data').then(function (data) {
@@ -38,12 +38,24 @@
                                     .force("collision", d3.forceCollide().radius(50)) // Strengthened collision force
                                     .on("tick", tickedGraph);
 
+                                // Function to create a curved path (arc) for the links
+                                function curvedLink(d) {
+                                    const dx = d.target.x - d.source.x,
+                                        dy = d.target.y - d.source.y,
+                                        dr = Math.sqrt(dx * dx + dy * dy) * 1.5; // Adjust the multiplier to increase curvature
+
+                                    return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+                                }
+
+                                // Define the links with curved paths
                                 const link = svgGraph.append("g")
-                                    .selectAll("line")
+                                    .selectAll("path")
                                     .data(graphData.links)
-                                    .enter().append("line")
+                                    .enter().append("path")
+                                    .attr("class", "link")
                                     .attr("stroke-width", 2)
                                     .attr("stroke", "#999")
+                                    .attr("fill", "none")
                                     .attr("marker-end", "url(#arrow)");
 
                                 const node = svgGraph.append("g")
@@ -61,7 +73,7 @@
                                     .attr("text-anchor", "middle")
                                     .text(d => d.id);
 
-                                // Add text along the link paths for F and G data
+                                // Add text along the curved links for F and G data
                                 const linkLabels = svgGraph.append("g")
                                     .selectAll(".link-label")
                                     .data(graphData.links)
@@ -74,10 +86,8 @@
                                     .text(d => `${d.f_data} - ${d.g_data}`);  // Add F and G data on the link
 
                                 function tickedGraph() {
-                                    link.attr("x1", d => d.source.x)
-                                        .attr("y1", d => d.source.y)
-                                        .attr("x2", d => d.target.x)
-                                        .attr("y2", d => d.target.y);
+                                    // Update the link paths to be curved
+                                    link.attr("d", curvedLink);
 
                                     node.attr("cx", d => d.x)
                                         .attr("cy", d => d.y);
@@ -85,7 +95,7 @@
                                     label.attr("x", d => d.x)
                                         .attr("y", d => d.y);
 
-                                    // Update the position of the link labels to follow the path of the line
+                                    // Update the position of the link labels to follow the curved path
                                     linkLabels
                                         .attr("x", d => (d.source.x + d.target.x) / 2)
                                         .attr("y", d => (d.source.y + d.target.y) / 2)
