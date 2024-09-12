@@ -1,106 +1,79 @@
+# queueDetails.py
+
 import os
-import re
 import sqlite3
 
-# Directory containing .properties files
-folder_path = 'path/to/your/folder'
+# Database name
+db_name = 'FLOWCEPTION.db'
 
-# Database setup
-db_name = 'queue_details.db'
-conn = sqlite3.connect(db_name)
-cursor = conn.cursor()
+# Function to fetch and insert/update queue details
+def process_properties_files(directory):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
 
-# Alter table to add the new PAP column if it does not exist
-cursor.execute('''
-ALTER TABLE QUEUE_DETAILS 
-ADD COLUMN PAP TEXT
-''')
+    # Loop through all .properties files in the directory
+    for filename in os.listdir(directory):
+        if filename.endswith('.properties'):
+            file_path = os.path.join(directory, filename)
 
-# Create table in SQLite database if not already created
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS QUEUE_DETAILS (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    input_queue TEXT,
-    copy_queue TEXT,
-    error_queue TEXT,
-    business_error_queue TEXT,
-    output_queue TEXT,
-    process_id TEXT,
-    category TEXT,
-    PAP TEXT,
-    UNIQUE (process_id, category)
-)
-''')
+            with open(file_path, 'r') as file:
+                data = {}
+                for line in file:
+                    if line.startswith('replace.replacement.'):
+                        key, value = line.split('=')
+                        key = key.strip()
+                        value = value.strip()
 
-# Define regular expressions for the required keys
-patterns = {
-    'input_queue': re.compile(r'^replace\.replacement\.10\s*=\s*(.*)$', re.MULTILINE),
-    'copy_queue': re.compile(r'^replace\.replacement\.11\s*=\s*(.*)$', re.MULTILINE),
-    'error_queue': re.compile(r'^replace\.replacement\.12\s*=\s*(.*)$', re.MULTILINE),
-    'output_queue': re.compile(r'^replace\.replacement\.18\s*=\s*(.*)$', re.MULTILINE),
-    'business_error_queue': re.compile(r'^replace\.replacement\.24\s*=\s*(.*)$', re.MULTILINE),
-    'process_id': re.compile(r'^replace\.replacement\.5\s*=\s*(.*)$', re.MULTILINE),
-    'category': re.compile(r'^replace\.replacement\.7\s*=\s*(.*)$', re.MULTILINE),
-}
+                        if key == 'replace.replacement.10':
+                            data['INPUT_QUEUE'] = value if not value.startswith('CHANGE_') else None
+                        elif key == 'replace.replacement.11':
+                            data['COPY_QUEUE'] = value if not value.startswith('CHANGE_') else None
+                        elif key == 'replace.replacement.12':
+                            data['ERROR_QUEUE'] = value if not value.startswith('CHANGE_') else None
+                        elif key == 'replace.replacement.24':
+                            data['BUSINESS_ERROR_QUEUE'] = value if not value.startswith('CHANGE_') else None
+                        elif key == 'replace.replacement.18':
+                            data['OUTPUT_QUEUE'] = value if not value.startswith('CHANGE_') else None
+                        elif key == 'replace.replacement.5':
+                            data['PROCESS_ID'] = value
+                            # Extract PAP (characters at position 3, 5-7)
+                            data['PAP'] = value[2] + value[4:7] if len(value) >= 7 else None
+                        elif key == 'replace.replacement.7':
+                            data['CATEGORY'] = value
 
-# Define the prefix to check for
-prefix = 'CHANGE_'
+                # If all queues start with "CHANGE_", skip this entry
+                if all(value is None for key, value in data.items() if 'QUEUE' in key):
+                    continue
 
-# Data insertion or update
-for filename in os.listdir(folder_path):
-    if filename.endswith('.properties'):
-        file_path = os.path.join(folder_path, filename)
+                # Use INSERT OR REPLACE to either insert a new row or replace the existing one
+                cursor.execute('''
+                INSERT OR REPLACE INTO QUEUE_DETAILS (
+                    ID, INPUT_QUEUE, COPY_QUEUE, ERROR_QUEUE, BUSINESS_ERROR_QUEUE,
+                    OUTPUT_QUEUE, PROCESS_ID, CATEGORY, PAP
+                ) VALUES (
+                    (SELECT ID FROM QUEUE_DETAILS WHERE PROCESS_ID = ? AND CATEGORY = ?),
+                    ?, ?, ?, ?, ?, ?, ?, ?
+                )
+                ''', (
+                    data.get('PROCESS_ID'),
+                    data.get('CATEGORY'),
+                    data.get('INPUT_QUEUE'),
+                    data.get('COPY_QUEUE'),
+                    data.get('ERROR_QUEUE'),
+                    data.get('BUSINESS_ERROR_QUEUE'),
+                    data.get('OUTPUT_QUEUE'),
+                    data.get('PROCESS_ID'),
+                    data.get('CATEGORY'),
+                    data.get('PAP')
+                ))
 
-        # Read the entire file content
-        with open(file_path, 'r') as file:
-            content = file.read()
-        
-        # Extract values using regular expressions
-        record = {key: None for key in patterns}
-        for key, pattern in patterns.items():
-            match = pattern.search(content)
-            if match:
-                value = match.group(1).strip()
-                # Check if value starts with the prefix
-                if value.startswith(prefix):
-                    record[key] = None
-                else:
-                    record[key] = value
-        
-        # Check if all queue values start with the prefix
-        if all(record[key] is None for key in ['input_queue', 'copy_queue', 'error_queue', 'output_queue', 'business_error_queue']):
-            continue  # Skip this record
-        
-        # Extract PAP from process_id
-        pap_value = None
-        if record['process_id']:
-            process_id = record['process_id']
-            if len(process_id) >= 7:
-                pap_value = process_id[2] + process_id[4:7]  # Extract 3rd char and 5-7 chars
-        
-        # Insert or update the record into the database
-        cursor.execute('''
-        INSERT INTO QUEUE_DETAILS (
-            input_queue, copy_queue, error_queue, business_error_queue,
-            output_queue, process_id, category, PAP
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT (process_id, category) 
-        DO UPDATE SET
-            input_queue = excluded.input_queue,
-            copy_queue = excluded.copy_queue,
-            error_queue = excluded.error_queue,
-            business_error_queue = excluded.business_error_queue,
-            output_queue = excluded.output_queue,
-            PAP = excluded.PAP
-        ''', (
-            record['input_queue'], record['copy_queue'], record['error_queue'],
-            record['business_error_queue'], record['output_queue'],
-            record['process_id'], record['category'],
-            pap_value
-        ))
+    # Commit the changes and close the connection
+    conn.commit()
+    conn.close()
+    print(f"Processed files in directory: {directory}")
 
-# Commit and close the connection
-conn.commit()
-conn.close()
+# Specify the directory containing .properties files
+directory_path = 'path_to_properties_files'
 
-print("Data extraction and table creation completed. The data is stored in queue_details.db.")
+# Process the properties files
+process_properties_files(directory_path)
