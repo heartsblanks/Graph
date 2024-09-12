@@ -35,6 +35,9 @@ patterns = {
     'category': re.compile(r'^replace\.replacement\.7\s*=\s*(.*)$', re.MULTILINE),
 }
 
+# Define the prefix to check for
+prefix = 'CHANGE_'
+
 # Data insertion
 for filename in os.listdir(folder_path):
     if filename.endswith('.properties'):
@@ -49,7 +52,16 @@ for filename in os.listdir(folder_path):
         for key, pattern in patterns.items():
             match = pattern.search(content)
             if match:
-                record[key] = match.group(1).strip()
+                value = match.group(1).strip()
+                # Check if value starts with the prefix
+                if value.startswith(prefix):
+                    record[key] = None
+                else:
+                    record[key] = value
+        
+        # Check if all queue values start with the prefix
+        if all(record[key] is None for key in ['input_queue', 'copy_queue', 'error_queue', 'output_queue', 'business_error_queue']):
+            continue  # Skip this record
         
         # Insert the record into the database
         cursor.execute('''
