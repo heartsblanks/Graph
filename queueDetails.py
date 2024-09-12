@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS QUEUE_DETAILS (
     business_error_queue TEXT,
     output_queue TEXT,
     process_id TEXT,
-    category TEXT
+    category TEXT,
+    UNIQUE (process_id, category)
 )
 ''')
 
@@ -38,7 +39,7 @@ patterns = {
 # Define the prefix to check for
 prefix = 'CHANGE_'
 
-# Data insertion
+# Data insertion or update
 for filename in os.listdir(folder_path):
     if filename.endswith('.properties'):
         file_path = os.path.join(folder_path, filename)
@@ -63,12 +64,19 @@ for filename in os.listdir(folder_path):
         if all(record[key] is None for key in ['input_queue', 'copy_queue', 'error_queue', 'output_queue', 'business_error_queue']):
             continue  # Skip this record
         
-        # Insert the record into the database
+        # Insert or update the record into the database
         cursor.execute('''
         INSERT INTO QUEUE_DETAILS (
             input_queue, copy_queue, error_queue, business_error_queue,
             output_queue, process_id, category
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (process_id, category) 
+        DO UPDATE SET
+            input_queue = excluded.input_queue,
+            copy_queue = excluded.copy_queue,
+            error_queue = excluded.error_queue,
+            business_error_queue = excluded.business_error_queue,
+            output_queue = excluded.output_queue
         ''', (
             record['input_queue'], record['copy_queue'], record['error_queue'],
             record['business_error_queue'], record['output_queue'],
