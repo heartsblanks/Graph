@@ -10,7 +10,13 @@ db_name = 'queue_details.db'
 conn = sqlite3.connect(db_name)
 cursor = conn.cursor()
 
-# Create table in SQLite database
+# Alter table to add the new PAP column if it does not exist
+cursor.execute('''
+ALTER TABLE QUEUE_DETAILS 
+ADD COLUMN PAP TEXT
+''')
+
+# Create table in SQLite database if not already created
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS QUEUE_DETAILS (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,6 +27,7 @@ CREATE TABLE IF NOT EXISTS QUEUE_DETAILS (
     output_queue TEXT,
     process_id TEXT,
     category TEXT,
+    PAP TEXT,
     UNIQUE (process_id, category)
 )
 ''')
@@ -64,23 +71,32 @@ for filename in os.listdir(folder_path):
         if all(record[key] is None for key in ['input_queue', 'copy_queue', 'error_queue', 'output_queue', 'business_error_queue']):
             continue  # Skip this record
         
+        # Extract PAP from process_id
+        pap_value = None
+        if record['process_id']:
+            process_id = record['process_id']
+            if len(process_id) >= 7:
+                pap_value = process_id[2] + process_id[4:7]  # Extract 3rd char and 5-7 chars
+        
         # Insert or update the record into the database
         cursor.execute('''
         INSERT INTO QUEUE_DETAILS (
             input_queue, copy_queue, error_queue, business_error_queue,
-            output_queue, process_id, category
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            output_queue, process_id, category, PAP
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT (process_id, category) 
         DO UPDATE SET
             input_queue = excluded.input_queue,
             copy_queue = excluded.copy_queue,
             error_queue = excluded.error_queue,
             business_error_queue = excluded.business_error_queue,
-            output_queue = excluded.output_queue
+            output_queue = excluded.output_queue,
+            PAP = excluded.PAP
         ''', (
             record['input_queue'], record['copy_queue'], record['error_queue'],
             record['business_error_queue'], record['output_queue'],
-            record['process_id'], record['category']
+            record['process_id'], record['category'],
+            pap_value
         ))
 
 # Commit and close the connection
