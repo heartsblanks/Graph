@@ -8,11 +8,10 @@ conn = sqlite3.connect(db_name)
 cursor = conn.cursor()
 
 # --------------------------------------
-# SCHEMA 1: PROPERTIES
 # TABLE: QUEUE_DETAILS
 # --------------------------------------
 cursor.execute('''
-CREATE TABLE IF NOT EXISTS PROPERTIES_QUEUE_DETAILS (
+CREATE TABLE IF NOT EXISTS QUEUE_DETAILS (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     INPUT_QUEUE TEXT,
     COPY_QUEUE TEXT,
@@ -27,11 +26,10 @@ CREATE TABLE IF NOT EXISTS PROPERTIES_QUEUE_DETAILS (
 ''')
 
 # --------------------------------------
-# SCHEMA 2: ROUTING
 # TABLE: ROUTING_ENTRIES (Empty for now)
 # --------------------------------------
 cursor.execute('''
-CREATE TABLE IF NOT EXISTS ROUTING_ROUTING_ENTRIES (
+CREATE TABLE IF NOT EXISTS ROUTING_ENTRIES (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     SOURCE TEXT,
     DESTINATION TEXT,
@@ -44,4 +42,4 @@ CREATE TABLE IF NOT EXISTS ROUTING_ROUTING_ENTRIES (
 conn.commit()
 conn.close()
 
-print(f"Database '{db_name}' created with two logical schemas: 'PROPERTIES' and 'ROUTING'.")
+print(f"Database '{db_name}' created with tables: 'QUEUE_DETAILS' and 'ROUTING_ENTRIES'.")
