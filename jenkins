@@ -1,19 +1,15 @@
-// Central Jenkinsfile stored in separate repo
 pipeline {
     agent any
     environment {
-        // Parameters from the main repo
-        REPO_NAME = "${env.GIT_URL}" // Main repo URL passed from the multibranch job
-        BRANCH_NAME = "${env.BRANCH_NAME}" // Branch name from the main repo
+        REPO_NAME = "${env.GIT_URL}"
+        BRANCH_NAME = "${env.BRANCH_NAME}"
     }
 
     stages {
         stage('Checkout Main Repo') {
             steps {
                 script {
-                    // Checkout the main repository where the app resides
-                    git branch: "${BRANCH_NAME}",
-                        url: "${REPO_NAME}"
+                    git branch: "${BRANCH_NAME}", url: "${REPO_NAME}"
                 }
             }
         }
@@ -30,32 +26,35 @@ pipeline {
                 archiveArtifacts artifacts: 'path/to/barfile.bar', allowEmptyArchive: false
             }
         }
+
+        stage('Deploy to DEV') {
+            steps {
+                echo "Deploying BAR file to DEV environment"
+                // Logic to deploy BAR file to DEV
+            }
+        }
+
+        stage('Approval for Promotion') {
+            steps {
+                script {
+                    // Optional: manual input for promotion
+                    input message: 'Do you want to trigger promotion to TEST?', ok: 'Yes'
+                    // Trigger the promotion job without waiting
+                    build job: 'Promotion_Job', parameters: [
+                        string(name: 'ENVIRONMENT', value: 'TEST'),
+                        string(name: 'BAR_FILE', value: 'path/to/barfile.bar')
+                    ], wait: false
+                }
+            }
+        }
     }
 
     post {
         success {
-            script {
-                // Add promotion steps here (like in Option 1)
-                currentBuild.description = "Build successful, ready for promotion"
-            }
-
-            promote('Promote to TEST') {
-                echo "Promoting to TEST environment"
-                // Logic to deploy the BAR file to TEST environment
-            }
-            
-            promote('Promote to UAT') {
-                echo "Promoting to UAT environment"
-                // Logic to deploy the BAR file to UAT environment
-            }
-            
-            promote('Promote to PROD') {
-                echo "Promoting to PROD environment"
-                // Logic to deploy the BAR file to PROD environment
-            }
+            echo "Build successful. Promotion process triggered."
         }
         failure {
-            echo "Build failed. Please check logs."
+            echo "Build failed. Please check the logs."
         }
     }
 }
