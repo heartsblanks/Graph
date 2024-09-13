@@ -1,0 +1,61 @@
+// Central Jenkinsfile stored in separate repo
+pipeline {
+    agent any
+    environment {
+        // Parameters from the main repo
+        REPO_NAME = "${env.GIT_URL}" // Main repo URL passed from the multibranch job
+        BRANCH_NAME = "${env.BRANCH_NAME}" // Branch name from the main repo
+    }
+
+    stages {
+        stage('Checkout Main Repo') {
+            steps {
+                script {
+                    // Checkout the main repository where the app resides
+                    git branch: "${BRANCH_NAME}",
+                        url: "${REPO_NAME}"
+                }
+            }
+        }
+
+        stage('Build BAR File') {
+            steps {
+                echo "Building BAR file for ${BRANCH_NAME}"
+                // Logic to build BAR file from the checked-out code
+            }
+        }
+
+        stage('Archive BAR File') {
+            steps {
+                archiveArtifacts artifacts: 'path/to/barfile.bar', allowEmptyArchive: false
+            }
+        }
+    }
+
+    post {
+        success {
+            script {
+                // Add promotion steps here (like in Option 1)
+                currentBuild.description = "Build successful, ready for promotion"
+            }
+
+            promote('Promote to TEST') {
+                echo "Promoting to TEST environment"
+                // Logic to deploy the BAR file to TEST environment
+            }
+            
+            promote('Promote to UAT') {
+                echo "Promoting to UAT environment"
+                // Logic to deploy the BAR file to UAT environment
+            }
+            
+            promote('Promote to PROD') {
+                echo "Promoting to PROD environment"
+                // Logic to deploy the BAR file to PROD environment
+            }
+        }
+        failure {
+            echo "Build failed. Please check logs."
+        }
+    }
+}
