@@ -8,12 +8,15 @@ ppt_folder = "path_to_your_folder"  # Update this with the path to your folder
 # Function to convert .ppt to .pptx
 def convert_ppt_to_pptx(ppt_file):
     powerpoint = win32.Dispatch("PowerPoint.Application")
-    powerpoint.Visible = 1
+    powerpoint.Visible = False  # Run PowerPoint in the background (invisible mode)
     
-    ppt = powerpoint.Presentations.Open(ppt_file)
+    ppt = powerpoint.Presentations.Open(ppt_file, WithWindow=False)
     pptx_file = ppt_file.replace(".ppt", ".pptx")
     ppt.SaveAs(pptx_file, 24)  # 24 is the format ID for .pptx
     ppt.Close()
+    
+    # Quit the PowerPoint application to prevent it from staying open
+    powerpoint.Quit()
     
     return pptx_file
 
